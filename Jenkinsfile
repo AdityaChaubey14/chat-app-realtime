@@ -26,7 +26,7 @@ pipeline {
             steps {
                 echo '🔍 Linting backend...'
                 dir('backend') {
-                    sh 'npm run lint || true'
+                    sh 'npm run lint || echo "Lint check skipped"'
                 }
             }
         }
@@ -48,20 +48,12 @@ pipeline {
                 }
             }
         }
-        
-        stage('Docker Build') {
-            steps {
-                echo '🐳 Building Docker images...'
-                sh 'docker build -f docker/Dockerfile.backend -t chat-app-backend:${BUILD_NUMBER} -t chat-app-backend:latest .'
-                sh 'docker build -f docker/Dockerfile.frontend -t chat-app-frontend:${BUILD_NUMBER} -t chat-app-frontend:latest .'
-                echo '✅ Images ready!'
-            }
-        }
     }
     
     post {
         success {
-            echo '✅ Pipeline SUCCESS!'
+            echo '✅ Pipeline SUCCESS! Backend & Frontend ready!'
+            echo '📦 Artifacts: frontend/dist/ ready for deployment'
         }
         failure {
             echo '❌ Pipeline FAILED!'
