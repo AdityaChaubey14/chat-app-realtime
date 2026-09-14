@@ -18,54 +18,78 @@ pipeline {
         stage('Backend - Install Dependencies') {
             steps {
                 echo '📦 Installing backend dependencies...'
-                dir("${BACKEND_DIR}") {
-                    sh 'npm install'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/backend:/app/backend \
+                        -w /app/backend \
+                        node:22-alpine \
+                        npm install
+                '''
             }
         }
         
         stage('Backend - Lint') {
             steps {
                 echo '🔍 Running ESLint on backend...'
-                dir("${BACKEND_DIR}") {
-                    sh 'npm run lint || true'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/backend:/app/backend \
+                        -w /app/backend \
+                        node:22-alpine \
+                        npm run lint || true
+                '''
             }
         }
         
         stage('Backend - Format Check') {
             steps {
                 echo '✨ Checking code formatting...'
-                dir("${BACKEND_DIR}") {
-                    sh 'npm run format:check || true'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/backend:/app/backend \
+                        -w /app/backend \
+                        node:22-alpine \
+                        npm run format:check || true
+                '''
             }
         }
         
         stage('Frontend - Install Dependencies') {
             steps {
                 echo '📦 Installing frontend dependencies...'
-                dir("${FRONTEND_DIR}") {
-                    sh 'npm install'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/frontend:/app/frontend \
+                        -w /app/frontend \
+                        node:22-alpine \
+                        npm install
+                '''
             }
         }
         
         stage('Frontend - Lint') {
             steps {
                 echo '🔍 Running ESLint on frontend...'
-                dir("${FRONTEND_DIR}") {
-                    sh 'npm run lint || true'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/frontend:/app/frontend \
+                        -w /app/frontend \
+                        node:22-alpine \
+                        npm run lint || true
+                '''
             }
         }
         
         stage('Frontend - Build') {
             steps {
                 echo '🔨 Building frontend...'
-                dir("${FRONTEND_DIR}") {
-                    sh 'npm run build'
-                }
+                sh '''
+                    docker run --rm \
+                        -v $PWD/frontend:/app/frontend \
+                        -w /app/frontend \
+                        node:22-alpine \
+                        npm run build
+                '''
             }
         }
         
@@ -102,7 +126,7 @@ pipeline {
             echo '❌ Pipeline failed!'
         }
         always {
-            echo '🧹 Cleaning up workspace...'
+            echo '🧹 Workspace cleaned!'
         }
     }
 }
