@@ -13,49 +13,55 @@ pipeline {
             }
         }
         
-        stage('Backend Build') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                    args '-v $WORKSPACE:/app -w /app/backend'
-                }
-            }
+        stage('Backend - Install') {
             steps {
                 echo '📦 Installing backend dependencies...'
-                sh 'npm install'
-                echo '✅ Backend ready!'
-            }
-        }
-        
-        stage('Frontend Build') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                    args '-v $WORKSPACE:/app -w /app/frontend'
+                dir('backend') {
+                    sh 'npm install'
                 }
             }
+        }
+        
+        stage('Backend - Lint') {
             steps {
-                echo '📦 Installing frontend dependencies...'
-                sh 'npm install'
-                echo '🔨 Building frontend...'
-                sh 'npm run build'
-                echo '✅ Frontend built!'
+                echo '🔍 Linting backend...'
+                dir('backend') {
+                    sh 'npm run lint || true'
+                }
             }
         }
         
-        stage('Docker Images') {
+        stage('Frontend - Install') {
+            steps {
+                echo '📦 Installing frontend dependencies...'
+                dir('frontend') {
+                    sh 'npm install'
+                }
+            }
+        }
+        
+        stage('Frontend - Build') {
+            steps {
+                echo '🔨 Building frontend...'
+                dir('frontend') {
+                    sh 'npm run build'
+                }
+            }
+        }
+        
+        stage('Docker Build') {
             steps {
                 echo '🐳 Building Docker images...'
-                sh 'docker build -f docker/Dockerfile.backend -t chat-app-backend:${BUILD_NUMBER} .'
-                sh 'docker build -f docker/Dockerfile.frontend -t chat-app-frontend:${BUILD_NUMBER} .'
-                echo '✅ Docker images ready!'
+                sh 'docker build -f docker/Dockerfile.backend -t chat-app-backend:${BUILD_NUMBER} -t chat-app-backend:latest .'
+                sh 'docker build -f docker/Dockerfile.frontend -t chat-app-frontend:${BUILD_NUMBER} -t chat-app-frontend:latest .'
+                echo '✅ Images ready!'
             }
         }
     }
     
     post {
         success {
-            echo '✅ Pipeline SUCCESS! Images built and ready to deploy.'
+            echo '✅ Pipeline SUCCESS!'
         }
         failure {
             echo '❌ Pipeline FAILED!'
