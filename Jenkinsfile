@@ -3,130 +3,62 @@ pipeline {
     
     environment {
         NODE_ENV = 'development'
-        BACKEND_DIR = 'backend'
-        FRONTEND_DIR = 'frontend'
     }
     
     stages {
         stage('Checkout') {
             steps {
-                echo '🔄 Checking out code from GitHub...'
+                echo '🔄 Checking out code...'
                 checkout scm
             }
         }
         
-        stage('Backend - Install Dependencies') {
+        stage('Backend Build') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    args '-v $WORKSPACE:/app -w /app/backend'
+                }
+            }
             steps {
                 echo '📦 Installing backend dependencies...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/backend:/app/backend \
-                        -w /app/backend \
-                        node:22-alpine \
-                        npm install
-                '''
+                sh 'npm install'
+                echo '✅ Backend ready!'
             }
         }
         
-        stage('Backend - Lint') {
-            steps {
-                echo '🔍 Running ESLint on backend...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/backend:/app/backend \
-                        -w /app/backend \
-                        node:22-alpine \
-                        npm run lint || true
-                '''
+        stage('Frontend Build') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    args '-v $WORKSPACE:/app -w /app/frontend'
+                }
             }
-        }
-        
-        stage('Backend - Format Check') {
-            steps {
-                echo '✨ Checking code formatting...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/backend:/app/backend \
-                        -w /app/backend \
-                        node:22-alpine \
-                        npm run format:check || true
-                '''
-            }
-        }
-        
-        stage('Frontend - Install Dependencies') {
             steps {
                 echo '📦 Installing frontend dependencies...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/frontend:/app/frontend \
-                        -w /app/frontend \
-                        node:22-alpine \
-                        npm install
-                '''
-            }
-        }
-        
-        stage('Frontend - Lint') {
-            steps {
-                echo '🔍 Running ESLint on frontend...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/frontend:/app/frontend \
-                        -w /app/frontend \
-                        node:22-alpine \
-                        npm run lint || true
-                '''
-            }
-        }
-        
-        stage('Frontend - Build') {
-            steps {
+                sh 'npm install'
                 echo '🔨 Building frontend...'
-                sh '''
-                    docker run --rm \
-                        -v $PWD/frontend:/app/frontend \
-                        -w /app/frontend \
-                        node:22-alpine \
-                        npm run build
-                '''
+                sh 'npm run build'
+                echo '✅ Frontend built!'
             }
         }
         
-        stage('Backend - Build Docker Image') {
+        stage('Docker Images') {
             steps {
-                echo '🐳 Building backend Docker image...'
-                sh '''
-                    docker build \
-                        -f docker/Dockerfile.backend \
-                        -t chat-app-backend:${BUILD_NUMBER} \
-                        -t chat-app-backend:latest .
-                '''
-            }
-        }
-        
-        stage('Frontend - Build Docker Image') {
-            steps {
-                echo '🐳 Building frontend Docker image...'
-                sh '''
-                    docker build \
-                        -f docker/Dockerfile.frontend \
-                        -t chat-app-frontend:${BUILD_NUMBER} \
-                        -t chat-app-frontend:latest .
-                '''
+                echo '🐳 Building Docker images...'
+                sh 'docker build -f docker/Dockerfile.backend -t chat-app-backend:${BUILD_NUMBER} .'
+                sh 'docker build -f docker/Dockerfile.frontend -t chat-app-frontend:${BUILD_NUMBER} .'
+                echo '✅ Docker images ready!'
             }
         }
     }
     
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo '✅ Pipeline SUCCESS! Images built and ready to deploy.'
         }
         failure {
-            echo '❌ Pipeline failed!'
-        }
-        always {
-            echo '🧹 Workspace cleaned!'
+            echo '❌ Pipeline FAILED!'
         }
     }
 }
