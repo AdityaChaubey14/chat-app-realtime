@@ -18,7 +18,7 @@ pipeline {
         stage('Backend - Install Dependencies') {
             steps {
                 echo '📦 Installing backend dependencies...'
-                dir() {
+                dir("${BACKEND_DIR}") {
                     sh 'npm install'
                 }
             }
@@ -27,7 +27,7 @@ pipeline {
         stage('Backend - Lint') {
             steps {
                 echo '🔍 Running ESLint on backend...'
-                dir() {
+                dir("${BACKEND_DIR}") {
                     sh 'npm run lint || true'
                 }
             }
@@ -36,7 +36,7 @@ pipeline {
         stage('Backend - Format Check') {
             steps {
                 echo '✨ Checking code formatting...'
-                dir() {
+                dir("${BACKEND_DIR}") {
                     sh 'npm run format:check || true'
                 }
             }
@@ -45,7 +45,7 @@ pipeline {
         stage('Frontend - Install Dependencies') {
             steps {
                 echo '📦 Installing frontend dependencies...'
-                dir() {
+                dir("${FRONTEND_DIR}") {
                     sh 'npm install'
                 }
             }
@@ -54,7 +54,7 @@ pipeline {
         stage('Frontend - Lint') {
             steps {
                 echo '🔍 Running ESLint on frontend...'
-                dir() {
+                dir("${FRONTEND_DIR}") {
                     sh 'npm run lint || true'
                 }
             }
@@ -63,7 +63,7 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 echo '🔨 Building frontend...'
-                dir() {
+                dir("${FRONTEND_DIR}") {
                     sh 'npm run build'
                 }
             }
@@ -73,7 +73,10 @@ pipeline {
             steps {
                 echo '🐳 Building backend Docker image...'
                 sh '''
-                    docker build                         -f docker/Dockerfile.backend                         -t chat-app-backend:                         -t chat-app-backend:latest .
+                    docker build \
+                        -f docker/Dockerfile.backend \
+                        -t chat-app-backend:${BUILD_NUMBER} \
+                        -t chat-app-backend:latest .
                 '''
             }
         }
@@ -82,7 +85,10 @@ pipeline {
             steps {
                 echo '🐳 Building frontend Docker image...'
                 sh '''
-                    docker build                         -f docker/Dockerfile.frontend                         -t chat-app-frontend:                         -t chat-app-frontend:latest .
+                    docker build \
+                        -f docker/Dockerfile.frontend \
+                        -t chat-app-frontend:${BUILD_NUMBER} \
+                        -t chat-app-frontend:latest .
                 '''
             }
         }
@@ -91,15 +97,12 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline completed successfully!'
-            // You can add notifications here (email, Slack, etc.)
         }
         failure {
             echo '❌ Pipeline failed!'
-            // You can add failure notifications here
         }
         always {
             echo '🧹 Cleaning up workspace...'
-            cleanWs()
         }
     }
 }
